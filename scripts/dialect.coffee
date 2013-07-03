@@ -2,18 +2,50 @@
 #   Dialectize some talk stuff
 #
 # Commands:
-#   bb translate <dialect> <text>
+#   hubot <dialect> me <text> - translates text to one of dialects: redneck, jive, cockney, fudd, bork, moron, piglatin, hckr, censor
 #
 # Events:
 #   none
 
-util = require 'util'
+QS = require 'querystring'
+htmlparser = require "htmlparser"
+select = require('cheerio-select')
+cheerio = require("cheerio")
+
+dialects = [
+  "redneck",
+  "jive",
+  "cockney",
+  "fudd",
+  "bork",
+  "moron",
+  "piglatin",
+  "hckr",
+  "censor"
+]
 
 module.exports = (robot) ->
+  dialect_choices = (dialect for _, dialect of dialects).sort().join('|')
+  pattern = new RegExp("(#{dialect_choices}) me (.*)",'i')
 
-  robot.respond /FAKE EVENT (.*)/i, (msg) ->
-    msg.send "fake event '#{msg.match[1]}' triggered"
-    robot.emit msg.match[1], {user: msg.message.user}
+  robot.respond pattern, (msg) ->
+    dialect = msg.match[1]
+    text = msg.match[2]
+    user_name = msg.message.user.name
 
-  robot.on 'debug', (event) ->
-    robot.send event.user, util.inspect event
+    params = QS.stringify({
+        'dialect': dialect,
+        'text': text
+        })
+    #msg.send "I'm working on translating your perfectly good North American English to #{dialect}:"
+
+    robot.http("http://www.rinkworks.com/dialect/dialectt.cgi")
+      .header('User-Agent', 'Mozilla/5.0')
+      .post(params) (err, res, body) ->
+        message_text = ''
+        $ = cheerio.load(body)
+        $('.dialectized_text p').each( (idx, ele) ->
+          message_text += $(this).text().trim()
+        )
+        msg.send "@#{user_name} speacking in #{dialect} said: #{message_text}"
+
