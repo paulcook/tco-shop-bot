@@ -47,5 +47,5 @@ module.exports = (robot) ->
         $('.dialectized_text p').each( (idx, ele) ->
           message_text += $(this).text().trim()
         )
-        msg.send "@#{user_name} speacking in #{dialect} said: #{message_text}"
+        msg.send "@#{user_name} speaking in #{dialect} said: #{message_text}"
 
